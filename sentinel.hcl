@@ -1,3 +1,3 @@
- policy "restrict-aws-instances-type-and-tag" {
-#  enforcement_level = "hard-mandatory"
-# }
+policy "nis2-policy-example" {
+  enforcement_level = "hard-mandatory"
+}
