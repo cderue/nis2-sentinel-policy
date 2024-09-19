@@ -1,42 +1,18 @@
-# Imports mock data
+# Import the tfplan/v2 module
 import "tfplan/v2" as tfplan
 
-# Get all AWS instances from all modules
-ec2_instances = filter tfplan.resource_changes as _, rc {
-    rc.type is "aws_instance" and
-        (rc.change.actions contains "create" or rc.change.actions is ["update"])
-}
-
-# Mandatory Instance Tags
-mandatory_tags = [
-    "Name",
-]
-
-# Allowed Types
-allowed_types = [
-    "t2.micro",
-    "t2.small",
-    "t2.medium",
-]
-
-# Rule to enforce "Name" tag on all instances
-mandatory_instance_tags = rule {
-    all ec2_instances as _, instance {
-        all mandatory_tags as mt {
-            instance.change.after.tags contains mt
+# Define the policy rule
+signed_commits = rule {
+    all tfplan.resources.github_branch_protection as _, branch {
+        all branch.change.after.required_status_checks as _, status {
+            status.strict == true and
+            "Signed Commit" in status.contexts
         }
     }
 }
 
-# Rule to restrict instance types
-instance_type_allowed = rule {
-    all ec2_instances as _, instance {
-        instance.change.after.instance_type in allowed_types
-    }
-}
-
-# Main rule that requires other rules to be true
+# Main policy
 main = rule {
-    (instance_type_allowed and mandatory_instance_tags) else true
+    signed_commits
 }
 
